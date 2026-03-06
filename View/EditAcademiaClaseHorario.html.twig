@@ -1,0 +1,85 @@
+{% set currentView = fsc.getCurrentView() %}
+{% set firstView = fsc.views | first %}
+
+<script>
+    function deleteHour(inlinea) {
+        $('#lines{{ currentView.getViewName() }} .' + inlinea).remove();
+    }
+
+    function scheduleFormAction(action) {
+        animateSpinner('add');
+
+        const formData = new FormData(document.forms['form{{ currentView.getViewName() }}']);
+        const plainFormData = Object.fromEntries(formData.entries());
+        const formDataJsonString = JSON.stringify(plainFormData);
+
+        let data = new FormData();
+        data.append('action', action);
+        data.append('idclase', plainFormData.idclase);
+        data.append('multireqtoken', plainFormData.multireqtoken);
+        data.append('activetab', plainFormData.activetab);
+        data.append('data', formDataJsonString);
+
+        var last_line = '0';
+        if ($('#lines{{ currentView.getViewName() }} .line').length > 0) {
+            last_line = $('#lines{{ currentView.getViewName() }} .line:last input.idhour').attr('name');
+        }
+        data.append('last_line', last_line);
+
+        console.log(data);
+
+        fetch('{{ fsc.url() }}', {
+            method: 'POST',
+            body: data
+        }).then(function (response) {
+            animateSpinner('remove', true);
+            if (response.ok) {
+                return response.json();
+            }
+            return Promise.reject(response);
+        }).then(function (data) {
+            if (data.multireqtoken !== '') {
+                document.forms['form{{ currentView.getViewName() }}'].multireqtoken.value = data.multireqtoken;
+            }
+            if (data.newline !== '') {
+                $('#lines{{ currentView.getViewName() }}').append(data.newline);
+            }
+            if (action === 'update-schedule' && data.success) {
+                window.location.href = data.url;
+            }
+            if (Array.isArray(data.messages)) {
+                data.messages.forEach(item => alert(item.message));
+            }
+        }).catch(function (error) {
+            alert('error');
+            console.warn(error);
+            animateSpinner('remove', false);
+        });
+
+        return false;
+    }
+</script>
+
+<form id="form{{ currentView.getViewName() }}" class="form{{ currentView.getViewName() }}" method="post">
+    <input type="hidden" name="idclase" value="{{ firstView.model.primaryColumnValue() }}">
+    <input type="hidden" name="activetab" value="{{ currentView.getViewName() }}">
+    <input type="hidden" name="multireqtoken" value="{{ fsc.multiRequestProtection.newToken() }}"/>
+    <h3>{{ currentView.title }}</h3>
+    <div id="lines{{ currentView.getViewName() }}">
+        {{ fsc.renderLines(fsc.getSchedule()) | raw }}
+    </div>
+    <div class="row">
+        <div class="col">
+            <button type="button" class="btn btn-sm btn-success btn-spin-action" onclick="return scheduleFormAction('add-schedule')">
+                <i class="fas fa-plus fa-fw" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline-block">{{ trans('add-schedule') }}</span>
+            </button>
+        </div>
+        <div class="col text-right">
+            <button class="btn btn-sm btn-primary btn-spin-action" type="button" onclick="return scheduleFormAction('update-schedule')">
+                <i class="fas fa-save fa-fw" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline-block">{{ trans('save') }}</span>
+            </button>
+        </div>
+    </div>
+</form>
