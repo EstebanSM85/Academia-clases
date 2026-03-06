@@ -8,8 +8,8 @@ class ListAcademiaClase extends ListController
     public function getPageData(): array
     {
         $data = parent::getPageData();
-        $data["title"] = "classes";
-        $data["menu"] = "Academy";
+        $data["title"] = "clases";
+        $data["menu"] = "academia";
         $data["icon"] = "fas fa-calendar";
         return $data;
     }
@@ -21,7 +21,7 @@ class ListAcademiaClase extends ListController
 
     protected function createViewsAcademiaClase(string $viewName = "ListAcademiaClase")
     {
-        $this->addView($viewName, "AcademiaClase", "classes", "fas fa-calendar");
+        $this->addView($viewName, "AcademiaClase", "clases", "fas fa-calendar");
         $this->addOrderBy($viewName, ["instructor"], "instructor");
         $this->addOrderBy($viewName, ["name"], "name", 2);
         $this->addSearchFields($viewName, ["instructor", "name"]);
